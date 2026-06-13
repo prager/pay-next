@@ -88,6 +88,11 @@ phpunit
 vendor/
 
 #-------------------------
+# Third Party Runtime Files
+#-------------------------
+app/ThirdParty/stripe-php/data/ca-certificates.crt
+
+#-------------------------
 # IDE / Development Files
 #-------------------------
 

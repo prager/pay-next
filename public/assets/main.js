@@ -1,3 +1,4 @@
+/* Updated v3 */
 function set_pay(memb, carr) {
   var mem_val = memb;
   var tot = 0;
@@ -66,6 +67,7 @@ function set_pay(memb, carr) {
 
   document.getElementById("proc_total").value = tot;
   document.getElementById("don_val").value = don;
+  document.getElementById("don_rep_val").value = rep;
   document.getElementById("mem_val").value = memb;
   document.getElementById("car_val").value = carr;
   document.getElementById("tot_btn").textContent = "$" + tot.toFixed(2);
@@ -81,6 +83,8 @@ function en_check_rep() {
 
 $(function () {
   var $form = $(".require-validation");
+  var $submitButton = $("#btnsubmit");
+
   $("form.require-validation").bind("submit", function (e) {
     var $form = $(".require-validation"),
       inputSelector = [
@@ -95,17 +99,41 @@ $(function () {
       valid = true;
     $errorMessage.addClass("d-none");
     $(".is-invalid").removeClass("is-invalid");
+
+    if ($form.data("processing")) {
+      e.preventDefault();
+      return false;
+    }
+
     $inputs.each(function (i, el) {
       var $input = $(el);
       if ($input.val() === "") {
         $input.addClass("is-invalid");
         $errorMessage.removeClass("d-none");
-        e.preventDefault();
+        valid = false;
       }
     });
 
+    if (!valid) {
+      e.preventDefault();
+      return false;
+    }
+
     if (!$form.data("cc-on-file")) {
       e.preventDefault();
+      $form.data("processing", true);
+      $submitButton.prop("disabled", true);
+
+      if (typeof Stripe === "undefined") {
+        showPaymentError("Stripe could not be loaded. Please refresh and try again.");
+        return false;
+      }
+
+      if (!$form.data("stripe-publishable-key")) {
+        showPaymentError("Stripe payment setup is missing. Please try again later.");
+        return false;
+      }
+
       Stripe.setPublishableKey($form.data("stripe-publishable-key"));
       Stripe.createToken(
         {
@@ -119,12 +147,15 @@ $(function () {
     }
   });
 
+  function showPaymentError(message) {
+    $(".error").removeClass("d-none").find(".alert").text(message);
+    $form.data("processing", false);
+    $submitButton.prop("disabled", false);
+  }
+
   function stripeResponseHandler(status, response) {
     if (response.error) {
-      $(".error")
-        .removeClass("d-none")
-        .find(".alert")
-        .text(response.error.message);
+      showPaymentError(response.error.message);
     } else {
       var token = response["id"];
       $form.find("input[type=text]").empty();

@@ -1,3 +1,4 @@
+<!-- Update v3 -->
 <!doctype html>
 <html lang="en">
 <head>
@@ -5,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>MDARC Payments</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
-    <link rel="stylesheet" href="/assets/css/style.css">
     <link rel="shortcut icon" href="/assets/img/mdarc-icon.ico" type="image/x-icon">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 </head>
@@ -46,7 +46,15 @@
                     </div>
 
                     <div class="card-body">
-                        <form action="/index.php/mdarc-post" method="post" class="require-validation" data-cc-on-file="false" data-stripe-publishable-key="pk_test_51O2MgQKP3nABA0ZmjpcKkIRrTVQ5CNjSzLpLS01AE5B74BnGpXI878k7wZrupzVS1Oj6PSa49AxUkEA7HrujtckW00wSefyl8u" id="payment-form">
+                        <?php if (! empty($paymentError)): ?>
+                            <div class="alert alert-danger" role="alert"><?= esc($paymentError) ?></div>
+                        <?php endif; ?>
+
+                        <?php if (! empty($paymentSuccess)): ?>
+                            <div class="alert alert-success" role="alert"><?= esc($paymentSuccess) ?></div>
+                        <?php endif; ?>
+
+                        <form action="/index.php/mdarc-post" method="post" class="require-validation" data-cc-on-file="false" data-stripe-publishable-key="<?= esc($stripeKey ?? '') ?>" id="payment-form">
                             <input type="hidden" id="mem_val" name="mem_val" value="45">
 
                             <div class="mb-3 name required">
@@ -176,15 +184,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
     <script src="https://js.stripe.com/v2/"></script>
-    <script src="/assets/main.js"></script>
-    <script>
-        const button = document.getElementById('btnsubmit');
-
-        button.addEventListener('click', function (event) {
-            setTimeout(function () {
-                event.target.disabled = true;
-            }, 0);
-        });
-    </script>
+    <script src="/assets/main.js?v=20260613-1"></script>
 </body>
 </html>
