@@ -1,5 +1,5 @@
 <?php
-/* Updated v4.01 */
+/* Updated v4.02 */
 namespace App\Controllers;
 
 use Stripe\Charge;
@@ -91,7 +91,7 @@ class Home extends BaseController
                 'amount' => (int) round($payment['total'] * 100),
                 'currency' => 'usd',
                 'source' => $this->request->getPost('stripeToken'),
-                'description' => 'MDARC payment for ' . $this->request->getPost('email'),
+                'description' => 'Paid by: ' . $this->request->getPost('cc_name'),
                 'receipt_email' => $this->request->getPost('email'),
                 'metadata' => [
                     'name_on_card' => $this->request->getPost('cc_name'),
@@ -118,15 +118,24 @@ class Home extends BaseController
         return $this->paymentView(null, sprintf(
             'Payment successful. Stripe charge ID: %s',
             $charge->id
-        ));
+        ), [
+            'name' => (string) $this->request->getPost('cc_name'),
+            'membership' => $payment['membership'],
+            'donation_mdarc' => $payment['donation_mdarc'],
+            'donation_repeater' => $payment['donation_repeater'],
+        ]);
     }
 
-    private function paymentView(?string $error = null, ?string $success = null): string
+    /**
+     * @param array<string, float|string> $paymentDetails
+     */
+    private function paymentView(?string $error = null, ?string $success = null, array $paymentDetails = []): string
     {
         return view('public/mdarc_view', [
             'stripeKey' => env('mdarc_key'),
             'paymentError' => $error,
             'paymentSuccess' => $success,
+            'paymentDetails' => $paymentDetails,
         ]);
     }
 

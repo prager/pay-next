@@ -1,4 +1,4 @@
-<!-- Update v3 -->
+<!-- Update v3.03 -->
 <!doctype html>
 <html lang="en">
 <head>
@@ -47,11 +47,17 @@
 
                     <div class="card-body">
                         <?php if (! empty($paymentError)): ?>
-                            <div class="alert alert-danger" role="alert"><?= esc($paymentError) ?></div>
+                            <div class="alert alert-danger alert-dismissible" role="alert">
+                                <?= esc($paymentError) ?>
+                                <a href="/index.php/mdarc" class="btn-close" aria-label="Close"></a>
+                            </div>
                         <?php endif; ?>
 
                         <?php if (! empty($paymentSuccess)): ?>
-                            <div class="alert alert-success" role="alert"><?= esc($paymentSuccess) ?></div>
+                            <div class="alert alert-success alert-dismissible" role="alert">
+                                <?= esc($paymentSuccess) ?>
+                                <a href="/index.php/mdarc" class="btn-close" aria-label="Close"></a>
+                            </div>
                         <?php endif; ?>
 
                         <form action="/index.php/mdarc-post" method="post" class="require-validation" data-cc-on-file="false" data-stripe-publishable-key="<?= esc($stripeKey ?? '') ?>" id="payment-form">
@@ -182,8 +188,54 @@
         </div>
     </footer>
 
+    <?php if (! empty($paymentSuccess) && ! empty($paymentDetails)): ?>
+        <div class="modal fade" id="paymentSuccessModal" tabindex="-1" aria-labelledby="paymentSuccessModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 class="modal-title fs-5" id="paymentSuccessModalLabel">Payment Successful</h2>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="mb-3">Your payment was processed successfully.</p>
+
+                        <dl class="row mb-0">
+                            <dt class="col-sm-6">Name</dt>
+                            <dd class="col-sm-6"><?= esc($paymentDetails['name'] ?? '') ?></dd>
+
+                            <dt class="col-sm-6">Membership Amount</dt>
+                            <dd class="col-sm-6">$<?= esc(number_format((float) ($paymentDetails['membership'] ?? 0), 2)) ?></dd>
+
+                            <dt class="col-sm-6">MDARC Donation</dt>
+                            <dd class="col-sm-6">$<?= esc(number_format((float) ($paymentDetails['donation_mdarc'] ?? 0), 2)) ?></dd>
+
+                            <dt class="col-sm-6">Repeater Donation</dt>
+                            <dd class="col-sm-6">$<?= esc(number_format((float) ($paymentDetails['donation_repeater'] ?? 0), 2)) ?></dd>
+                        </dl>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    <?php endif; ?>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
     <script src="https://js.stripe.com/v2/"></script>
     <script src="/assets/main.js?v=20260613-1"></script>
+    <?php if (! empty($paymentSuccess) && ! empty($paymentDetails)): ?>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                var modalElement = document.getElementById('paymentSuccessModal');
+                var modal = new bootstrap.Modal(modalElement, {
+                    backdrop: 'static',
+                    keyboard: false
+                });
+
+                modal.show();
+            });
+        </script>
+    <?php endif; ?>
 </body>
 </html>
