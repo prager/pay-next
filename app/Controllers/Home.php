@@ -1,7 +1,8 @@
 <?php
-/* Updated v4.02 */
+/* Updated v4.04 */
 namespace App\Controllers;
 
+use App\Models\Manager_model;
 use Stripe\Charge;
 use Stripe\Exception\ApiErrorException;
 use Stripe\Stripe;
@@ -78,6 +79,13 @@ class Home extends BaseController
             return $this->paymentView('Payment certificate configuration is missing. Please try again later.');
         }
 
+        $managerModel = new Manager_model();
+        $member = $managerModel->get_member((string) $this->request->getPost('email'));
+
+        if ($member === null) {
+            return $this->paymentView('No MDARC member was found for the submitted email address.');
+        }
+
         Stripe::setCABundlePath($caBundlePath);
         Stripe::setApiKey($secretKey);
 
@@ -91,11 +99,14 @@ class Home extends BaseController
                 'amount' => (int) round($payment['total'] * 100),
                 'currency' => 'usd',
                 'source' => $this->request->getPost('stripeToken'),
-                'description' => 'Paid by: ' . $this->request->getPost('cc_name'),
+                'description' => 'Membership for: ' . $member['fname'] . ' ' . $member['lname'],
                 'receipt_email' => $this->request->getPost('email'),
                 'metadata' => [
                     'name_on_card' => $this->request->getPost('cc_name'),
                     'email' => $this->request->getPost('email'),
+                    'member_id' => (string) $member['id_members'],
+                    'member_name' => trim($member['fname'] . ' ' . $member['lname']),
+                    'member_callsign' => (string) $member['callsign'],
                     'student' => $payment['student'] ? 'yes' : 'no',
                     'membership' => number_format($payment['membership'], 2, '.', ''),
                     'carrier' => number_format($payment['carrier'], 2, '.', ''),
@@ -111,6 +122,30 @@ class Home extends BaseController
             return $this->paymentView($exception->getMessage());
         }
 
+        $param = [
+            'email' => (string) $this->request->getPost('email'),
+            'total' => $payment['total'],
+            'carrier' => $this->request->getPost('carrier') ? 'carrier' : '',
+            'membership' => $this->request->getPost('mem') ? 'mem' : '',
+            'student' => $payment['student'] ? 'on' : '',
+            'donation' => $payment['donation_mdarc'],
+            'don_rep' => $payment['donation_repeater'],
+            'stripe_charge_id' => $charge->id,
+        ];
+
+        $processedPayment = $managerModel->process_payment($param);
+
+        if (($processedPayment['status'] ?? false) !== true) {
+            log_message('error', 'MDARC post-payment processing failed for charge {charge_id}: {message}', [
+                'charge_id' => $charge->id,
+                'message' => $processedPayment['message'] ?? 'Unknown error',
+            ]);
+
+            return $this->paymentView(
+                'Payment succeeded, but member records could not be updated. Please contact MDARC with Stripe charge ID: ' . $charge->id
+            );
+        }
+
         log_message('info', 'Stripe charge succeeded for MDARC payment. Charge ID: {charge_id}', [
             'charge_id' => $charge->id,
         ]);
@@ -119,10 +154,10 @@ class Home extends BaseController
             'Payment successful. Stripe charge ID: %s',
             $charge->id
         ), [
-            'name' => (string) $this->request->getPost('cc_name'),
-            'membership' => $payment['membership'],
-            'donation_mdarc' => $payment['donation_mdarc'],
-            'donation_repeater' => $payment['donation_repeater'],
+            'name' => trim($member['fname'] . ' ' . $member['lname']),
+            'membership' => $processedPayment['mem_amount'] ?? $payment['membership'],
+            'donation_mdarc' => $processedPayment['don_amount'] ?? $payment['donation_mdarc'],
+            'donation_repeater' => $processedPayment['don_rep_amount'] ?? $payment['donation_repeater'],
         ]);
     }
 
